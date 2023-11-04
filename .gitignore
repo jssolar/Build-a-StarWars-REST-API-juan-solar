@@ -1,5 +1,7 @@
 .env
 .venv
+migrations/
+migrations
 database.database
 database.db
 diagram.png

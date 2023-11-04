@@ -4,11 +4,11 @@ This module takes care of starting the API Server, Loading the DB and Adding the
 import os
 from flask import Flask, request, jsonify, url_for
 from flask_migrate import Migrate
-from flask_swagger import swagger
+# from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Planets, Peoples,FavoritoPeoples,FavoritoPlanets
+from models import db, User, Planets, Peoples,FavoritoPeoples, FavoritoPlanets
 #from models import Person
 
 app = Flask(__name__)
@@ -19,8 +19,11 @@ if db_url is not None:
     app.config['SQLALCHEMY_DATABASE_URI'] = db_url.replace("postgres://", "postgresql://")
 else:
     app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
+    
+    
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
+app.config['ENV'] = 'development'
+app.config['DEBUG'] = True
 MIGRATE = Migrate(app, db)
 db.init_app(app)
 CORS(app)
@@ -33,8 +36,10 @@ def handle_invalid_usage(error):
 
 # generate sitemap with all your endpoints
 @app.route('/')
+
 def sitemap():
     return generate_sitemap(app)
+
 
 @app.route('/user', methods=['GET'])
 def handle_hello():
@@ -88,13 +93,17 @@ def handle_planets(planets_id):
 
     return jsonify(response_body), 200
 
+
+
+#-----< todos los usuarios >--------------------------------------------------------->
 @app.route("/users", methods= ['GET'])
 def get_all_users():
     users = User.query.all()
-    users_serialized = list(map(lambda x: x.serialize(), users))
+    users_serialized = list(map(lambda usuarios: usuarios.serialize(), users))
     return jsonify({"msg": "Completed", "users": users_serialized})
 
 
+#-----< un usuario >--------------------------------------------------------->
 @app.route('/users/<int:users_id>', methods=['GET'])
 def handle_users(users_id):
     single_users = User.query.get(users_id)
@@ -109,6 +118,7 @@ def handle_users(users_id):
 
     return jsonify(response_body), 200
 
+#-----< todos los favoritos de un  usuario >--------------------------------------------------------->
 @app.route('/users/favorites/<int:users_id>', methods=['GET'])
 def user_favotites(users_id):
 
@@ -120,6 +130,8 @@ def user_favotites(users_id):
 
     return jsonify("Favorites", planet, people ), 200
 
+
+#-----< agregar un planeta a un usuario >--------------------------------------------------------->
 @app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
 def add_fav_planet(planet_id):
     select_planet= Planets.query.get(planet_id)
@@ -143,6 +155,8 @@ def add_fav_planet(planet_id):
         })
     return jsonify({}), 200
 
+#-----< eliminar planeta de un usuario >--------------------------------------------------------->
+
 @app.route('/favorite/planet/<int:planet_id>', methods=['DELETE'])
 def delete_fav_planet(planet_id):
     delete_planet = FavoritoPlanets.query.get(planet_id)
@@ -156,6 +170,8 @@ def delete_fav_planet(planet_id):
             "error": error.args
         })
     return jsonify({}), 200
+
+#-----< agregar un personaje-favorito de un usuario >--------------------------------------------------------->
 
 @app.route('/favorite/people/<int:peoples_id>', methods=['POST'])
 def add_fav_people(peoples_id):
@@ -179,6 +195,8 @@ def add_fav_people(peoples_id):
         })
     return jsonify({}), 200
 
+
+#-----< eliminar un personaje-favorito de un usuario >--------------------------------------------------------->
 @app.route('/favorite/people/<int:peoples_id>', methods=['DELETE'])
 def delete_fav_people(peoples_id):
     delete_people = FavoritoPeoples.query.get(peoples_id)
